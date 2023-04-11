@@ -17,9 +17,7 @@ from linebot.exceptions import InvalidSignatureError
 from dotenv import load_dotenv
 import os
 import random
-import time
-
-epoch_time = int(time.time())
+import shutil
 
 load_dotenv()
 
@@ -126,10 +124,16 @@ def handle_content_message(event):
     
     message_content = line_bot_api.get_message_content(event.message.id)
     print(type(message_content))
+    
+    image_folder = "image_uploads"  # specify the folder where you want to save the images
+    if not os.path.exists(image_folder):
+        os.makedirs(image_folder)
+        
     file_path = 'image_uploads/'+event.message.id+'.'+ext
-    with open(file_path, 'wb') as f:
+    
+    with open(file_path, 'wb') as f1:
         for chunk in message_content.iter_content():
-            f.write(chunk)
+            f1.write(chunk)
     img = Image.open(file_path)
     
     features, labels = extract_feature(img)
@@ -141,3 +145,14 @@ def handle_content_message(event):
             event.reply_token, [
                 TextSendMessage(text='จากการประมวลผมฉลามพันธุ์นี้คือ '+result + ' ครับ'),
             ])
+
+    # close the file after processing 
+    f1.close()
+
+    # for collect data
+    if not os.path.exists(result):
+        os.makedirs(result)
+    shutil.copy2(f"image_uploads/{event.message.id}.{ext}", f"{result}/{event.message.id}.{ext}")
+    
+    # remove the image file after processing
+    os.remove(file_path)
