@@ -6,19 +6,28 @@ from tensorflow.keras.applications.densenet import preprocess_input
 from keras.models import Model
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, Header, HTTPException
 from model import load_ml_model
 from PIL import Image
 from io import BytesIO
 from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import LineBotApiError, InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, SourceUser, StickerMessage, ImageMessage
+from linebot import LineBotApi
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageMessage
+from linebot.exceptions import InvalidSignatureError
 from dotenv import load_dotenv
 import os
+import random
+import time
+
+epoch_time = int(time.time())
+
 load_dotenv()
 
-channel_access_token = os.getenv('LINE_CHANNEL_SECRET', None)
+channel_access_token = os.getenv('CHANNEL_ACCESS_TOKEN', None)
+channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
+
 line_bot_api = LineBotApi(channel_access_token)
+handler = WebhookHandler(channel_secret)
 
 app = FastAPI(title="Shark Spotter")
 
@@ -84,13 +93,51 @@ async def predict(file: UploadFile):
 
 
 @app.post("/webhook")
-async def callback(request: Request):
-    data = await request.json()
-    print(f"data: {data}")
-    for i in range(len(data['events'])):
-        event = data['events'][i]
-        event_handle(event)
+async def callback(request: Request, x_line_signature: str = Header(None)):
+    body = await request.body()
+    try:
+        handler.handle(body.decode("utf-8"), x_line_signature)
+    except InvalidSignatureError as e:
+        raise HTTPException(status_code=400, detail="chatbot handle body error.%s" % e.message)
+    return 'OK'
         
-def event_handle(event):
-    print("event")
-    print(event["type"])
+@handler.add(MessageEvent, message=TextMessage)
+def message_text(event):
+    
+    ## event.message.text คือข้อความที่เขาพิมพ์มา
+    text = event.message.text
+    
+    profile = line_bot_api.get_profile(event.source.user_id)
+    
+    start_word = ['สวัสดีครับคุณพี่ ','ยินดีต้อนรับครับ คุณ']
+    response_word = random.choice(start_word) + profile.display_name + " สงสัยว่าฉลามที่เจอเป็นฉลามสายพันธุ์ไหนสามารถส่งมาถามน้องหลามได้เลยครับ"
+        
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=response_word)
+    )
+    
+@handler.add(MessageEvent, message=(ImageMessage))
+def handle_content_message(event):
+    if isinstance(event.message, ImageMessage):
+        ext = 'jpg'
+    else:
+        return
+    
+    message_content = line_bot_api.get_message_content(event.message.id)
+    print(type(message_content))
+    file_path = 'image_uploads/'+event.message.id+'.'+ext
+    with open(file_path, 'wb') as f:
+        for chunk in message_content.iter_content():
+            f.write(chunk)
+    img = Image.open(file_path)
+    
+    features, labels = extract_feature(img)
+    # Predict as number
+    img_pred_class = predict_ensemble(features)
+    result = encoder_labels.inverse_transform(img_pred_class)[0]
+    
+    line_bot_api.reply_message(
+            event.reply_token, [
+                TextSendMessage(text='จากการประมวลผมฉลามพันธุ์นี้คือ '+result + ' ครับ'),
+            ])
