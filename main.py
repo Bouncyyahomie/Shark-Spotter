@@ -102,7 +102,6 @@ async def callback(request: Request, x_line_signature: str = Header(None)):
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     
-    ## event.message.text คือข้อความที่เขาพิมพ์มา
     text = event.message.text
     
     profile = line_bot_api.get_profile(event.source.user_id)
@@ -125,11 +124,11 @@ def handle_content_message(event):
     message_content = line_bot_api.get_message_content(event.message.id)
     print(type(message_content))
     
-    image_folder = "image_uploads"  # specify the folder where you want to save the images
+    image_folder = "temp"  
     if not os.path.exists(image_folder):
         os.makedirs(image_folder)
         
-    file_path = 'image_uploads/'+event.message.id+'.'+ext
+    file_path = 'temp/'+event.message.id+'.'+ext
     
     with open(file_path, 'wb') as f1:
         for chunk in message_content.iter_content():
@@ -152,7 +151,7 @@ def handle_content_message(event):
     # for collect data
     if not os.path.exists(result):
         os.makedirs(result)
-    shutil.copy2(f"image_uploads/{event.message.id}.{ext}", f"{result}/{event.message.id}.{ext}")
+    shutil.copy2(file_path, f"{result}/{event.message.id}.{ext}")
     
     # remove the image file after processing
     os.remove(file_path)
