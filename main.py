@@ -8,7 +8,7 @@ from keras.models import Model
 from sklearn.preprocessing import LabelEncoder
 from rembg import remove
 import numpy as np
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Request, Header, HTTPException,File, UploadFile
 from model import load_ml_model
 from PIL import Image
 from linebot import LineBotApi, WebhookHandler
@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 import os
 import random
 import csv
+from io import BytesIO
 import tensorflow as tf
 
 def set_seed(seed):
@@ -239,16 +240,16 @@ def helloWorld():
 
 
 # old ver for test in swagger
-# @app.post("/predict")
-# async def predict(file: UploadFile):
-#     # Load the image
-#     img = Image.open(BytesIO(await file.read()))
-#     # Extract features from the image
-#     features, labels = extract_feature(img)
-#     # Predict as number
-#     img_pred_class = predict_ensemble(features)
-#     result = encoder_labels.inverse_transform(img_pred_class)[0]
-#     return {"predict": result}
+@app.post("/predict")
+async def predict(file: UploadFile):
+    # Load the image
+    img = Image.open(BytesIO(await file.read()))
+    # Extract features from the image
+    features, labels = extract_feature(img)
+    # Predict as number
+    img_pred_class = predict_ensemble(features)
+    result = encoder_labels.inverse_transform(img_pred_class)[0]
+    return {"predict": result}
 
 
 @app.post("/webhook")
@@ -372,7 +373,12 @@ def get_user_response(event):
             line_bot_api.reply_message(event.reply_token, messages)
         else: 
             payload = result
-            messages = [TextMessage(text=payload)]
+            response_word = random.choice(start_word) + profile.display_name + \
+                            f" ต้องการข้อมูลของฉลามสายพันธุ์ไหน สามารถพิมชื่อมาได้เลยครับ นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
+            for i in available_shark:
+                response_word += i[0] + ' - ' + i[1].replace('||', ',') + '\n' + '\n'
+                
+            messages = [TextMessage(text=payload), TextMessage(text=response_word)]
             line_bot_api.reply_message(event.reply_token, messages)
 
 
@@ -440,7 +446,7 @@ def handle_content_message(event):
         confirm_template = TemplateSendMessage(
             alt_text='Confirm template',
             template=ConfirmTemplate(
-                text="ต้องขออภัยรูปภาพนี้อาจจะมีความชัดไม่มากพอหรืออาจจะไม่ใช่สายพันธุ์ฉลามที่สามารถพบเจอได้ในน่านน้ำไทย โปรดเลือกรูปอื่นเพื่อนำมาประมวลผลใหม่ครับ หรือหากท่านมั่นใจว่านี่คือรูปปลาฉลามและต้องการทำนายภาพนี้อีกครั้งโปรดเลือกใช่ ",
+                text="ต้องขออภัยรูปภาพนี้ไม่สามารถระบุสายพันธุ์ปลาฉลามในรูปภาพนี้ได้ เนื่องจากอาจจะมีความชัดไม่มากพอหรืออาจจะไม่ใช่สายพันธุ์ฉลามที่สามารถพบเจอได้ในน่านน้ำไทย โปรดเลือกรูปอื่นเพื่อนำมาประมวลผลใหม่ครับ หรือหากท่านมั่นใจว่านี่คือรูปปลาฉลามและต้องการทำนายภาพนี้อีกครั้งโปรดเลือกใช่ ",
                 actions=[
                     MessageAction(label="ใช่", text="retry\u200B"),
                     MessageAction(label="ไม่", text="no-retry\u200B"),
