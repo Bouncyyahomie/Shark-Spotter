@@ -19,6 +19,16 @@ from dotenv import load_dotenv
 import os
 import random
 import csv
+import tensorflow as tf
+
+def set_seed(seed):
+  os.environ['TF_DETERMINISTIC_OPS'] = '1'
+  random.seed(seed)
+  np.random.seed(seed)
+  tf.random.set_seed(seed)
+
+# Set the seed to a fixed value
+set_seed(42)
 
 
 load_dotenv()
@@ -31,18 +41,58 @@ handler = WebhookHandler(channel_secret)
 
 app = FastAPI(title="Shark Spotter")
 
-model_1 = load_ml_model('model/densenet_model.h5')
+model_1 = load_ml_model('model/cnn_model.h5')
 model_2 = load_ml_model('model/svc_model.pkl')
-model_3 = load_ml_model('model/sgd_model.pkl')
+model_3 = load_ml_model('model/knn_model.pkl')
 
 base_model = DenseNet201(weights='imagenet', include_top=False)
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 extractor_model = Model(inputs=base_model.input, outputs=x)
 
-class_labels = ['grey reef shark', 'great hammerhead', 'scalloped hammerhead', 'coral shark', 'bull shark', 'spottail shark', 'pigeye shark', 'whitespotted bambooshark', 'indonesian bambooshark',
-                'zebra shark', 'tiger shark', 'slender bambooshark', 'blacktip reef shark', 'graceful shark', 'spinner shark', 'brownbanded shark', 'whitetip reef shark', 'grey bambooshark']
-best_weights = [0.25, 0.5, 0.25]
+class_labels = ['blacktip reef shark',
+ 'brownbanded bambooshark',
+ 'bull shark',
+ 'coral catshark',
+ 'graceful shark',
+ 'great hammerhead',
+ 'grey bambooshark',
+ 'grey reef shark',
+ 'indonesian bambooshark',
+ 'pigeye shark',
+ 'scalloped hammerhead',
+ 'slender bambooshark',
+ 'spinner shark',
+ 'spottail shark',
+ 'tiger shark',
+ 'whitespotted bambooshark',
+ 'whitetip reef shark',
+ 'zebra shark']
+
+available_shark = [
+    ["Grey bambooshark", "ฉลามกบเทา || ฉลามตุ๊กแก"],
+    ["Indonesian bambooshark", "ฉลามกบ || ฉลามกบครีบเหลี่ยม || ฉลามกบอินโดนีเซีย || ฉลามลายตุ๊กแก"],
+    ["Slender bambooshark", "ฉลามกบเหลือง || ฉลามกบหลังสัน || ฉลามกบลาย || ฉลามหิน || ฉลามลาย"],
+    ["Whitespotted bambooshark", "ฉลามกบจุดขาว || ฉลามกบลายเสือน้ำตาล || ฉลามกบลาย || ฉลามหิน"],
+    ["Brownbanded bambooshark", "ฉลามกบแถบน้ำตาล || ฉลามกบครีบเว้า || ฉลามกบจุด || ฉลามกบลาย"],
+    ["Zebra shark", "ฉลามเสือดาว || ฉลามลายเสือดาว || ฉลามม้าลาย || ฉลามเซบราเอียน"],
+    ["Coral catshark", "ฉลามกบลายหินอ่อน || ฉลามลายหินอ่อน || ฉลามแมว || ฉลามแมวปะการัง"],
+    ["Graceful shark", "ฉลามหูดำ || ฉลามหน้าหมู || ฉลามจ้าวมัน || จ้าวมัน"],
+    ["Grey reef shark", "ฉลามครีบดำใหญ่ || ฉลามปะการังสีเทา || ฉลามจ้าวมัน || จ้าวมัน || ฉลามสีเทา || ฉลามหูดำ"],
+    ["Pigeye shark", "ฉลามตาเล็ก || ฉลามหน้าหมู || ฉลามชวา"],
+    ["Spinner shark", "ฉลามหัวแหลม || ฉลามหูดำ || ฉลามจมูกยาว || ฉลามครีบยาว || ชายกรวย"],
+    ['Bull shark', 'ฉลามหัวบาตร || ฉลามวัวกระทิง || ฉลามปากแม่น้ำ || ฉลามแม่น้ำ'],
+    ['Blacktip reef shark', 'ฉลามปะการังครีบดำ || ฉลามหูดำ || ฉลามครีบดำ'],
+    ['Spottail shark', 'ฉลามหางจุด || ฉลามหูดำ || ฉลามครีบดำ || ฉลามหนูหัวแหลม || ฉลามจุดดำ'],
+    ['Whitetip reef shark', 'ฉลามครีบขาว || ฉลามขี้เซา || ฉลามปลายครีบขาว || ฉลามปะการังครีบขาว'],
+    ['Tiger shark', 'ฉลามเสือ || เสือทะเล || ตะเพียนทอง || พิมพา'],
+    ["Scalloped hammerhead", "ฉลามหัวค้อน || ฉลามหัวค้อนสีน้ำเงิน || ฉลามหัวฆ้อนสีเงิน || อ้ายแบ้"],
+    ["Great hammerhead", "ฉลามหัวค้อนใหญ่ || ฉลามหัวฆ้อนยักษ์"]
+]
+
+
+
+best_weights = [0.6, 0.2, 0.2]
 
 encoder_labels = LabelEncoder()
 encoder_labels.fit(class_labels)
@@ -116,16 +166,22 @@ def predict_ensemble(features):
     print('Top 3 class for Model 2:', top_label2)
     print('Top 3 class for Model 3:', top_label3)
 
-    print(top_preds1)
-    print(top_preds2)
-    print(top_preds3)
+    ensemble_predictions = (preds_1 + preds_prob_2 + preds_prob_3) / 3
 
-    if top_preds1[0] - top_preds1[1] >= 0.25 or top_preds2[0] - top_preds2[1] >= 0.25 or top_preds3[0] - top_preds3[1] >= 0.25:
-        if top_preds1[0] - top_preds1[1] > 0.01 and top_preds2[0] - top_preds2[1] > 0.01 and top_preds3[0] - top_preds3[1] > 0.01:
-            print('This image is', final_preds_label[0])
-            return "Y", final_preds
-        else:
-            return "N", final_preds
+    confidence_threshold = 0.6
+
+    # get the maximum confidence for each prediction
+    max_confidence = np.max(ensemble_predictions, axis=1)
+
+    low_confidence_mask = max_confidence > confidence_threshold
+
+    print(max_confidence)
+    print(low_confidence_mask)
+
+    if top_label1[0] == top_label2[0] == top_label3[0] :
+        return "Y", top_label1[0]
+    elif low_confidence_mask:
+        return "Y", final_preds
     else:
         return "N", final_preds
 
@@ -209,9 +265,11 @@ async def callback(request: Request, x_line_signature: str = Header(None)):
 @handler.add(MessageEvent, message=TextMessage)
 def get_user_response(event):
     profile = line_bot_api.get_profile(event.source.user_id)
-    start_word = ['สวัสดีครับคุณพี่ ', 'ยินดีต้อนรับครับ คุณ']
+    start_word = ['สวัสดีครับคุณพี่ ', 'ฉลามนั้นชอบงับคุณ แต่ผมมาช่วยคุณงับ คุณ']
+    print(event.message.text)
+    print(profile.display_name)
 
-    if event.message.text == "retry":
+    if event.message.text == "retry\u200B":
         with open('uploads/collect.csv', "r") as f1:
             line = f1.readlines()
         last_line = line[-1]
@@ -223,17 +281,18 @@ def get_user_response(event):
         features, labels = extract_feature(img)
         img_pred_class1 = predict_ensemble_no_shark(features)
 
-        features2, labels2 = extract_feature_no_bg(img)
-        img_pred_class2 = predict_ensemble_no_shark(features2)
+        # features2, labels2 = extract_feature_no_bg(img)
+        # img_pred_class2 = predict_ensemble_no_shark(features2)
 
-        x = final_answer(img_pred_class1, img_pred_class2)
-        print(type(x))
+        # x = final_answer(img_pred_class1, img_pred_class2)
+        x= encoder_labels.inverse_transform(img_pred_class1)
+        print(x)
         if type(x) is tuple:
             message = x[0].capitalize() + ' หรือ ' + x[1].capitalize() 
             f_csv = message
         else:
             print(x)
-            message = x
+            message = x[0]
             f_csv = message
 
         line_bot_api.reply_message(
@@ -258,7 +317,7 @@ def get_user_response(event):
                 writer.writeheader()
                 writer.writerow(new_row)
 
-    elif event.message.text == "no-retry":
+    elif event.message.text == "no-retry\u200B":
         line_bot_api.reply_message(
             event.reply_token, [
                 TextSendMessage(
@@ -275,7 +334,10 @@ def get_user_response(event):
         )
     elif event.message.text == "shark info":
         response_word = random.choice(start_word) + profile.display_name + \
-            " ต้องการข้อมูลของฉลามสายพันธุ์ไหน สามารถพิมชื่อมาได้เลยครับ"
+                        f" ต้องการข้อมูลของฉลามสายพันธุ์ไหน สามารถพิมชื่อมาได้เลยครับ นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
+        for i in available_shark:
+           
+            response_word += i[0] + ' - ' + i[1].replace('||', ',') + '\n' + '\n'
 
         line_bot_api.reply_message(
             event.reply_token,
@@ -293,14 +355,27 @@ def get_user_response(event):
         line_bot_api.reply_message(event.reply_token, messages)
         
     else:
-        payload = generate_payload(event.message.text)
-        response_word = random.choice(start_word) + profile.display_name + \
-            " พันธ์ฉลามที่ท่านได้ส่งมานั้น มีข้อมูลตามนี้ครับ"
+        result = generate_payload(event.message.text)
+        if len(result) == 2:
+
+            payload = result[0]
+            img = result[1]
+            print(img)
+            response_word = random.choice(start_word) + profile.display_name + \
+                " พันธุ์ฉลามที่ท่านได้ส่งมานั้น มีข้อมูลตามนี้ครับ"
+                
+            messages = [TextMessage(text=response_word),
+                        TextMessage(text= payload),
+                        ImageSendMessage(original_content_url=img,
+                                        preview_image_url=img)]
             
-        messages = [TextMessage(text=response_word),
-                    TextMessage(text= payload)]
-        
-        line_bot_api.reply_message(event.reply_token, messages)
+            line_bot_api.reply_message(event.reply_token, messages)
+        else: 
+            payload = result
+            messages = [TextMessage(text=payload)]
+            line_bot_api.reply_message(event.reply_token, messages)
+
+
 
 @handler.add(MessageEvent, message=(ImageMessage))
 def handle_content_message(event):
@@ -329,11 +404,11 @@ def handle_content_message(event):
     img_pred_class1 = predict_ensemble(features1)
     print(img_pred_class1[0])
 
-    features2, labels2 = extract_feature_no_bg(img)
-    img_pred_class2 = predict_ensemble(features2)
-    print(img_pred_class2[0])
-    if img_pred_class2[0] == "Y" and img_pred_class1[0] == "Y":
-        x = final_answer(img_pred_class1[1], img_pred_class2[1])
+    # features2, labels2 = extract_feature_no_bg(img)
+    # img_pred_class2 = predict_ensemble(features2)
+    # print(img_pred_class2[0])
+    if  img_pred_class1[0] == "Y":
+        x= encoder_labels.inverse_transform([img_pred_class1[1]])
         print(type(x))
         if type(x) is tuple:
             message = x[0].capitalize() + ' หรือ ' + x[1].capitalize()
@@ -345,12 +420,16 @@ def handle_content_message(event):
                 ])
         else:
             print(x)
-            message = x.capitalize()
+            message = x[0].capitalize()
+            print(message)
             f_csv = message
-            payload = generate_payload(message)
+            payload, img = generate_payload(message)
             
             messages = [TextMessage(text= "จากการประมาลผลรูปนี้มีแนวโน้มที่จะเป็น "+message + "และนี่คือข้อมูลเพิ่มเติมครับ"),
-                        TextMessage(text= payload)]
+                        TextMessage(text= payload),
+                        ImageSendMessage(original_content_url=img,
+                                    preview_image_url=img)
+                        ]
             
             line_bot_api.reply_message(event.reply_token, messages)
     else:
@@ -363,8 +442,8 @@ def handle_content_message(event):
             template=ConfirmTemplate(
                 text="ต้องขออภัยรูปภาพนี้อาจจะมีความชัดไม่มากพอหรืออาจจะไม่ใช่สายพันธุ์ฉลามที่สามารถพบเจอได้ในน่านน้ำไทย โปรดเลือกรูปอื่นเพื่อนำมาประมวลผลใหม่ครับ หรือหากท่านมั่นใจว่านี่คือรูปปลาฉลามและต้องการทำนายภาพนี้อีกครั้งโปรดเลือกใช่ ",
                 actions=[
-                    MessageAction(label="ใช่", text="retry"),
-                    MessageAction(label="ไม่", text="no-retry")
+                    MessageAction(label="ใช่", text="retry\u200B"),
+                    MessageAction(label="ไม่", text="no-retry\u200B"),
                 ]
             )
         )
@@ -398,3 +477,8 @@ def handle_content_message(event):
             writer = csv.DictWriter(f, fieldnames=header)
             writer.writeheader()
             writer.writerow(new_row)
+
+
+
+# [0.704 0.29]
+# []
