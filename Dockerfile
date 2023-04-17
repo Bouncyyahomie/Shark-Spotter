@@ -1,7 +1,6 @@
 FROM tiangolo/uvicorn-gunicorn:python3.9-slim
-RUN mkdir /Shark-spotter
-COPY . /Shark-spotter
-WORKDIR /Shark-spotter
+
+# Install necessary packages
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
@@ -12,13 +11,25 @@ RUN apt-get update \
         libgl1-mesa-glx \
         libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy application code to Docker container
+RUN mkdir /app
+WORKDIR /app
+COPY . /app/
+
+# Install application dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
+
 # Set up GPU configuration (if applicable)
 # Uncomment the following lines if using GPU acceleration
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    cuda-command-line-tools-11-1 \
+    cuda-command-line-tools-11-4 \
     && rm -rf /var/lib/apt/lists/*
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
-CMD uvicorn main:app  --host=0.0.0.0 --port=${PORT:-8000}
+# Expose the port
+EXPOSE 8000
+
+# Set the command to run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
