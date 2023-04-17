@@ -8,3 +8,4 @@ python-dotenv==1.0.0
 rembg==2.0.32
 scikit_learn==1.2.2
 tensorflow==2.12.0
+nvidia-tensorrt==99.0.0
