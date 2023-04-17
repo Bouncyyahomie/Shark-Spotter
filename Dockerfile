@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Set up GPU configuration (if applicable)
 # Uncomment the following lines if using GPU acceleration
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    cuda-command-line-tools-11-4 \
+    cuda-command-line-tools \
     && rm -rf /var/lib/apt/lists/*
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
