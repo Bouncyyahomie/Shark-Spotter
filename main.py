@@ -373,7 +373,7 @@ def get_user_response(event):
             line_bot_api.reply_message(event.reply_token, messages)
         else: 
             payload = result
-            response_word =  f"นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
+            response_word =  f"นี่คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
             for i in available_shark:
                 response_word += i[0] + ' - ' + i[1].replace('||', ',') + '\n' + '\n'
                 
