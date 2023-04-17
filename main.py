@@ -322,12 +322,12 @@ def get_user_response(event):
         line_bot_api.reply_message(
             event.reply_token, [
                 TextSendMessage(
-                    text="สามารถส่งรูปมาใหม่ได้เลยครับ"),
+                    text="หากท่านต้องการทำนายสายพันธุ์ปลาฉลามจากรูปใหม่ สามารถส่งรูปมาใหม่ได้เลยครับ"),
             ])
 
     elif event.message.text == "classify shark":
         response_word = random.choice(start_word) + profile.display_name + \
-            " สงสัยว่าฉลามที่เจอเป็นฉลามสายพันธุ์ไหนสามารถส่งมาถามน้องหลามได้เลยครับ"
+            "สงสัยว่าฉลามที่เจอเป็นฉลามสายพันธุ์ไหนสามารถส่งมาถามน้องหลามได้เลยครับ"
 
         line_bot_api.reply_message(
             event.reply_token,
@@ -335,7 +335,7 @@ def get_user_response(event):
         )
     elif event.message.text == "shark info":
         response_word = random.choice(start_word) + profile.display_name + \
-                        f" ต้องการข้อมูลของฉลามสายพันธุ์ไหน สามารถพิมชื่อมาได้เลยครับ นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
+                        f"ต้องการข้อมูลของฉลามสายพันธุ์ไหน สามารถพิมชื่อมาได้เลยครับ นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
         for i in available_shark:
            
             response_word += i[0] + ' - ' + i[1].replace('||', ',') + '\n' + '\n'
@@ -346,7 +346,7 @@ def get_user_response(event):
         )
     elif event.message.text == "more info about shark":
         response_word = random.choice(start_word) + profile.display_name + \
-            " หากสนใจเกี่ยวกับ ฉลามและปลากระดูกอ่อนในน่านน้ำไทย สามารถสแกน QR Code ด่านล่างได้เลยเพื่อศึกษาเพิ่มเติมจาก หนังสือ ปลากระดูกอ่อนของไทยและใกล้เคียง (THE CARTILAGINOUS FISHES OF THAILAND AND ADJUSCENT WATERS) ได้เลยครับ"
+            "หากสนใจเกี่ยวกับ ฉลามและปลากระดูกอ่อนในน่านน้ำไทย สามารถสแกน QR Code ด่านล่างได้เลยเพื่อศึกษาเพิ่มเติมจาก หนังสือ ปลากระดูกอ่อนของไทยและใกล้เคียง (THE CARTILAGINOUS FISHES OF THAILAND AND ADJUSCENT WATERS) ได้เลยครับ"
 
         messages = [TextSendMessage(text=response_word),
                    ImageSendMessage(original_content_url="https://sv1.picz.in.th/images/2023/04/14/mVe6nI.jpg",
@@ -363,7 +363,7 @@ def get_user_response(event):
             img = result[1]
             print(img)
             response_word = random.choice(start_word) + profile.display_name + \
-                " พันธุ์ฉลามที่ท่านได้ส่งมานั้น มีข้อมูลตามนี้ครับ"
+                "พันธุ์ฉลามที่ท่านได้ส่งมานั้น มีข้อมูลตามนี้ครับ"
                 
             messages = [TextMessage(text=response_word),
                         TextMessage(text= payload),
@@ -373,8 +373,7 @@ def get_user_response(event):
             line_bot_api.reply_message(event.reply_token, messages)
         else: 
             payload = result
-            response_word = random.choice(start_word) + profile.display_name + \
-                            f" ต้องการข้อมูลของฉลามสายพันธุ์ไหน สามารถพิมชื่อมาได้เลยครับ นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
+            response_word =  f"นี้คือรายชื่อของฉลามที่เราสามารถตอบได้:\n"
             for i in available_shark:
                 response_word += i[0] + ' - ' + i[1].replace('||', ',') + '\n' + '\n'
                 
