@@ -1,35 +1,26 @@
 FROM tiangolo/uvicorn-gunicorn:python3.9-slim
 
-# Install necessary packages
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        gcc \
-        ffmpeg \
-        libsm6 \
-        libxext6 \
-        openssh-client \
-        libgl1-mesa-glx \
-        libglib2.0-0 \
+RUN mkdir /Shark-spotter
+COPY . /Shark-spotter
+WORKDIR /Shark-spotter
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy application code to Docker container
-RUN mkdir /Shark-spotter
-WORKDIR /Shark-spotter
-COPY . /Shark-spotter/
+RUN curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | apt-key add -
+RUN echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" >> /etc/apt/sources.list.d/cuda.list
+RUN echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" >> /etc/apt/sources.list.d/cuda.list
 
-# Install application dependencies
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-# Set up GPU configuration (if applicable)
-# Uncomment the following lines if using GPU acceleration
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cuda-command-line-tools \
     && rm -rf /var/lib/apt/lists/*
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
-# Expose the port
-EXPOSE 8000
+RUN apt-get update
+RUN apt-get install gcc ffmpeg libsm6 libxext6 openssh-client -y
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-# Set the command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn main:app --host=0.0.0.0 --port=${PORT:-8000}
