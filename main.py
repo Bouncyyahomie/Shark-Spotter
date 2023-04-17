@@ -21,9 +21,9 @@ import random
 import csv
 from io import BytesIO
 import tensorflow as tf
-import tensorrt as trt
+# import tensorrt as trt
 
-trt.init_libnvinfer_plugins(None,'')
+# trt.init_libnvinfer_plugins(None,'')
 
 def set_seed(seed):
   os.environ['TF_DETERMINISTIC_OPS'] = '1'
