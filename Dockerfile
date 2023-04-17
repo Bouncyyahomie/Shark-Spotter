@@ -13,9 +13,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application code to Docker container
-RUN mkdir /app
-WORKDIR /app
-COPY . /app/
+RUN mkdir /Shark-spotter
+WORKDIR /Shark-spotter
+COPY . /Shark-spotter/
 
 # Install application dependencies
 RUN pip install --no-cache-dir --upgrade pip \
