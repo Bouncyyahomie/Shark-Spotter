@@ -12,15 +12,6 @@ RUN apt-get update && \
         gnupg \
         curl \
         build-essential \
-        libcurl4-openssl-dev \
-        libssl-dev \
-        libnvrtc8.0 \
-        libcudnn7=7.6.4.38-1+cuda10.0 \
-        libcudnn7-dev=7.6.4.38-1+cuda10.0 \
-        libnvinfer6=6.0.1-1+cuda10.0 \
-        libnvinfer-dev=6.0.1-1+cuda10.0 \
-        libnvparsers6=6.0.1-1+cuda10.0 \
-        libnvparsers-dev=6.0.1-1+cuda10.0 \
         python3-dev \
         python3-pip
 
